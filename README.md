@@ -63,17 +63,13 @@ Make sure your PostgreSQL instance has the pgvector extension installed, then ru
 alembic upgrade head
 ```
 
-### 4. Start Services
-
-Two services need to run simultaneously:
+### 4. Start Server
 
 ```bash
-# Terminal 1: REST API (Background Path entry point, port 6789)
-python -m myknowledge api
-
-# Terminal 2: MCP Server (Hot Path, port 6788)
-python -m myknowledge mcp
+python -m myknowledge
 ```
+
+This starts a single server on port 6789 with both the REST API (`/api/v1/*`) and MCP endpoint (`/mcp`).
 
 ## Integrating with Claude Code
 
@@ -82,7 +78,7 @@ python -m myknowledge mcp
 Add MCP Server configuration in Claude Code:
 
 ```bash
-claude mcp add --transport http --scope user myknowledge http://127.0.0.1:6788/mcp
+claude mcp add --transport http --scope user myknowledge http://127.0.0.1:6789/mcp
 ```
 
 Or manually edit `~/.claude.json`:
@@ -92,7 +88,7 @@ Or manually edit `~/.claude.json`:
   "mcpServers": {
     "myknowledge": {
       "type": "http",
-      "url": "http://localhost:6788/mcp"
+      "url": "http://localhost:6789/mcp"
     }
   }
 }
@@ -157,15 +153,15 @@ After installation, run `claude /hooks` to verify — you should see the Stop ho
 src/myknowledge/
 ├── config.py                 # Environment variable configuration
 ├── types.py                  # Pydantic models, enums
-├── __main__.py               # Entry point: python -m myknowledge api|mcp
+├── __main__.py               # Entry point: python -m myknowledge
 │
-├── api/                      # FastAPI REST API
-│   ├── app.py                #   Application factory
+├── api/                      # FastAPI REST API (also mounts MCP)
+│   ├── app.py                #   Application factory, mounts MCP at /mcp
 │   └── routes/
 │       ├── ingest.py         #   POST /api/v1/ingest (Background Path)
 │       └── health.py         #   GET /api/v1/health
 │
-├── mcp/                      # MCP Server (Hot Path)
+├── mcp/                      # MCP Server (Hot Path, mounted at /mcp)
 │   └── server.py             #   3 tools: remember_this, query_memory, list_projects
 │
 ├── extraction/               # Distillation layer

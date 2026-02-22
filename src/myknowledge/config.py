@@ -25,10 +25,6 @@ class Settings(BaseSettings):
     API_PORT: int = 6789
     API_PREFIX: str = "/api/v1"
 
-    # MCP Server
-    MCP_HOST: str = "0.0.0.0"
-    MCP_PORT: int = 6788
-
     # Retrieval tuning
     SCORE_WEIGHT_SEMANTIC: float = 0.5
     SCORE_WEIGHT_IMPORTANCE: float = 0.3

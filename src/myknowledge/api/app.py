@@ -8,25 +8,31 @@ from fastapi import FastAPI
 from myknowledge.api.routes.health import router as health_router
 from myknowledge.api.routes.ingest import router as ingest_router
 from myknowledge.config import settings
+from myknowledge.mcp.server import create_mcp_app
 
 logger = logging.getLogger(__name__)
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Startup and shutdown events."""
-    # Startup: pre-load the embedding model
-    logger.info("Loading embedding model...")
-    from myknowledge.retrieval.embedding import get_model
-
-    get_model()
-    logger.info("Embedding model ready.")
-    yield
-    # Shutdown
-    logger.info("Shutting down.")
-
-
 def create_app() -> FastAPI:
+    mcp_app = create_mcp_app()
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        """Startup and shutdown events."""
+        # Startup: pre-load the embedding model
+        logger.info("Loading embedding model...")
+        from myknowledge.retrieval.embedding import get_model
+
+        get_model()
+        logger.info("Embedding model ready.")
+
+        # Initialize the MCP session manager (sub-app lifespan
+        # doesn't run automatically when mounted inside FastAPI)
+        async with mcp_app.router.lifespan_context(mcp_app):
+            yield
+
+        logger.info("Shutting down.")
+
     app = FastAPI(
         title="myknowledge",
         description="Agent Memory - Cross-project knowledge sharing",
@@ -36,6 +42,9 @@ def create_app() -> FastAPI:
 
     app.include_router(health_router, prefix=settings.API_PREFIX)
     app.include_router(ingest_router, prefix=settings.API_PREFIX)
+
+    # Mount MCP server at /mcp
+    app.mount("/mcp", mcp_app)
 
     return app
 

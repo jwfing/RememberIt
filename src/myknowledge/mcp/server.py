@@ -18,14 +18,13 @@ logger = logging.getLogger(__name__)
 
 mcp = FastMCP(
     "myknowledge",
-    host=settings.MCP_HOST,
-    port=settings.MCP_PORT,
     instructions=(
         "Agent Memory service for cross-project knowledge sharing. "
         "Use `query_memory` to search for relevant knowledge across all projects. "
         "Use `remember_this` to save important knowledge for future reference. "
         "Use `list_projects` to see all projects and their knowledge overview."
     ),
+    streamable_http_path="/",
 )
 
 

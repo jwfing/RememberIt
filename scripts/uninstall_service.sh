@@ -1,23 +1,25 @@
 #!/bin/bash
 #
-# 卸载 myknowledge launchd 服务
+# Uninstall myknowledge launchd service
 #
 
 set -e
 
 PLIST_DIR="$HOME/Library/LaunchAgents"
-API_PLIST="$PLIST_DIR/dev.jwfing.myknowledge.api.plist"
-MCP_PLIST="$PLIST_DIR/dev.jwfing.myknowledge.mcp.plist"
+PLIST="$PLIST_DIR/dev.jwfing.myknowledge.plist"
 
-echo "=== Uninstalling myknowledge services ==="
+echo "=== Uninstalling myknowledge service ==="
 
-# 停止并卸载
-launchctl unload "$API_PLIST" 2>/dev/null && echo "Unloaded: API Server" || echo "API Server not loaded"
-launchctl unload "$MCP_PLIST" 2>/dev/null && echo "Unloaded: MCP Server" || echo "MCP Server not loaded"
+# Stop and unload (also clean up old split services if they exist)
+launchctl unload "$PLIST" 2>/dev/null && echo "Unloaded: myknowledge" || echo "Service not loaded"
+launchctl unload "$PLIST_DIR/dev.jwfing.myknowledge.api.plist" 2>/dev/null || true
+launchctl unload "$PLIST_DIR/dev.jwfing.myknowledge.mcp.plist" 2>/dev/null || true
 
-# 删除 plist 文件
-rm -f "$API_PLIST" "$MCP_PLIST"
+# Remove plist files
+rm -f "$PLIST"
+rm -f "$PLIST_DIR/dev.jwfing.myknowledge.api.plist"
+rm -f "$PLIST_DIR/dev.jwfing.myknowledge.mcp.plist"
 
 echo ""
-echo "Services removed. Log files retained at ~/Library/Logs/myknowledge/"
+echo "Service removed. Log files retained at ~/Library/Logs/myknowledge/"
 echo "To also remove logs: rm -rf ~/Library/Logs/myknowledge"

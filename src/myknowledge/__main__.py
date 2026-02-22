@@ -1,8 +1,7 @@
-"""Entry point: run API server or MCP server."""
+"""Entry point: run the unified server (API + MCP)."""
 
 import argparse
 import logging
-import sys
 
 logging.basicConfig(
     level=logging.INFO,
@@ -10,10 +9,18 @@ logging.basicConfig(
 )
 
 
-def run_api():
-    """Run the FastAPI REST API server."""
+def run_server():
+    """Run the unified server with both REST API and MCP endpoints."""
     import uvicorn
     from myknowledge.config import settings
+
+    logger = logging.getLogger("myknowledge.startup")
+    logger.info(
+        "Starting myknowledge on %s:%s (API: %s/*, MCP: /mcp)",
+        settings.API_HOST,
+        settings.API_PORT,
+        settings.API_PREFIX,
+    )
 
     uvicorn.run(
         "myknowledge.api.app:app",
@@ -23,52 +30,18 @@ def run_api():
     )
 
 
-def run_mcp():
-    """Run the MCP server with streamable HTTP transport."""
-    # Enable DEBUG for MCP/uvicorn to trace invalid HTTP requests
-    logging.getLogger("mcp").setLevel(logging.DEBUG)
-    logging.getLogger("uvicorn.error").setLevel(logging.DEBUG)
-    logging.getLogger("uvicorn.access").setLevel(logging.DEBUG)
-
-    from myknowledge.mcp.server import create_mcp_app
-
-    # Pre-load embedding model
-    from myknowledge.retrieval.embedding import get_model
-    get_model()
-
-    app = create_mcp_app()
-
-    import uvicorn
-    from myknowledge.config import settings
-
-    logger = logging.getLogger("myknowledge.mcp.startup")
-    logger.info(
-        "Starting MCP server on %s:%s (endpoint: /mcp)",
-        settings.MCP_HOST,
-        settings.MCP_PORT,
-    )
-
-    uvicorn.run(
-        app,
-        host=settings.MCP_HOST,
-        port=settings.MCP_PORT,
-        log_level="debug",
-    )
-
-
 def main():
     parser = argparse.ArgumentParser(description="myknowledge - Agent Memory")
     parser.add_argument(
         "command",
-        choices=["api", "mcp"],
-        help="Which server to run: 'api' for REST API, 'mcp' for MCP server",
+        nargs="?",
+        default="serve",
+        choices=["serve"],
+        help="Command to run (default: serve)",
     )
     args = parser.parse_args()
 
-    if args.command == "api":
-        run_api()
-    elif args.command == "mcp":
-        run_mcp()
+    run_server()
 
 
 if __name__ == "__main__":
