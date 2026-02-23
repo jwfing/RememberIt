@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ~/Work/private/memor.ai/scripts/claude_hook.py",
+            "command": "python3 /Users/fengjunwen/Work/private/memor.ai/scripts/claude-hook/claude_hook.py",
             "async": true
           }
         ]

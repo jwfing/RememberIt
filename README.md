@@ -109,7 +109,7 @@ The hook automatically sends conversation content to the API for knowledge disti
 **Option 1: One-Click Install**
 
 ```bash
-./scripts/install_hook.sh
+./scripts/claude-hook/install_hook.sh
 ```
 
 **Option 2: Manual Configuration**

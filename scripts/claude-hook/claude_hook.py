@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 """
-Claude Code Hook Script — Background Path 采集入口
+Claude Code Hook Script — Background Path ingestion entry point
 
-在每次 Claude Code 对话结束（Stop event）时自动触发，
-读取完整对话记录，发送到 myknowledge API 进行知识提炼。
+Automatically triggered at the end of each Claude Code conversation (Stop event).
+Reads the full conversation transcript and sends it to the myknowledge API
+for knowledge extraction.
 
-使用方式：
-  将此脚本配置到 Claude Code 的 Stop hook 中，
-  详见同目录下的 claude_hook_config.json。
+Usage:
+  Configure this script as a Claude Code Stop hook.
+  See claude_hook_config.json in the same directory.
 
-环境变量：
-  MYKNOWLEDGE_API_URL   — API 地址，默认 http://localhost:8000
-  MYKNOWLEDGE_PROJECT   — 当前项目名称，用于关联记忆到项目
+Environment variables:
+  MYKNOWLEDGE_API_URL   — API address, default http://localhost:6789
+  MYKNOWLEDGE_PROJECT   — Current project name, used to associate memories with a project
 """
 
 import json
@@ -24,12 +25,12 @@ from pathlib import Path
 API_URL = os.environ.get("MYKNOWLEDGE_API_URL", "http://localhost:6789")
 INGEST_ENDPOINT = f"{API_URL}/api/v1/ingest"
 
-# 从环境变量或 .claude 配置推断项目名
+# Infer project name from environment variable or config
 PROJECT_NAME = os.environ.get("MYKNOWLEDGE_PROJECT", "")
 
 
 def read_hook_input() -> dict:
-    """从 stdin 读取 Claude Code 传入的 JSON 数据。"""
+    """Read JSON data passed by Claude Code via stdin."""
     try:
         raw = sys.stdin.read()
         return json.loads(raw) if raw.strip() else {}
@@ -39,8 +40,8 @@ def read_hook_input() -> dict:
 
 def read_transcript(transcript_path: str) -> list[dict]:
     """
-    读取 Claude Code 的对话记录文件（JSONL 格式）。
-    每行是一个 JSON 对象，代表一条消息。
+    Read the Claude Code conversation transcript file (JSONL format).
+    Each line is a JSON object representing a single message.
     """
     messages = []
     path = Path(transcript_path)
@@ -54,12 +55,12 @@ def read_transcript(transcript_path: str) -> list[dict]:
                 continue
             try:
                 entry = json.loads(line)
-                # 提取对话消息（过滤掉系统内部事件）
+                # Extract conversation messages (filter out internal system events)
                 msg_type = entry.get("type", "")
                 if msg_type in ("human", "assistant"):
                     role = "user" if msg_type == "human" else "assistant"
                     content = entry.get("message", {}).get("content", "")
-                    # content 可能是 string 或 list of blocks
+                    # content can be a string or a list of blocks
                     if isinstance(content, list):
                         text_parts = []
                         for block in content:
@@ -78,13 +79,13 @@ def read_transcript(transcript_path: str) -> list[dict]:
 
 def detect_project_name(cwd: str) -> str:
     """
-    尝试从工作目录推断项目名称。
-    优先使用环境变量，其次用 git remote，最后用目录名。
+    Attempt to infer the project name from the working directory.
+    Priority: environment variable > git remote > directory name.
     """
     if PROJECT_NAME:
         return PROJECT_NAME
 
-    # 尝试从 git remote 获取项目名
+    # Try to get project name from git remote
     try:
         import subprocess
         result = subprocess.run(
@@ -93,7 +94,7 @@ def detect_project_name(cwd: str) -> str:
         )
         if result.returncode == 0:
             url = result.stdout.strip()
-            # 从 git URL 提取项目名：git@github.com:user/repo.git -> repo
+            # Extract project name from git URL: git@github.com:user/repo.git -> repo
             name = url.rstrip("/").split("/")[-1]
             if name.endswith(".git"):
                 name = name[:-4]
@@ -101,12 +102,12 @@ def detect_project_name(cwd: str) -> str:
     except Exception:
         pass
 
-    # 使用目录名作为 fallback
+    # Fall back to directory name
     return Path(cwd).name
 
 
 def send_to_api(session_id: str, project_name: str, messages: list[dict]) -> bool:
-    """将对话发送到 myknowledge API 的 ingest endpoint。"""
+    """Send the conversation to the myknowledge API ingest endpoint."""
     if not messages:
         return False
 
@@ -115,7 +116,7 @@ def send_to_api(session_id: str, project_name: str, messages: list[dict]) -> boo
         "project_name": project_name or None,
         "messages": messages,
         "metadata": {
-            "source": "claude-code-hook",
+            "source": "claude-hook-code-hook",
             "hook_event": "Stop",
         },
     }).encode("utf-8")
@@ -130,7 +131,7 @@ def send_to_api(session_id: str, project_name: str, messages: list[dict]) -> boo
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
             result = json.loads(resp.read().decode("utf-8"))
-            # 输出到 stderr（Claude Code 在 verbose 模式下会显示）
+            # Output to stderr (visible in Claude Code verbose mode)
             print(
                 f"[myknowledge] Conversation ingested: {result.get('conversation_id', 'unknown')}",
                 file=sys.stderr,
@@ -151,7 +152,7 @@ def main():
     transcript_path = hook_input.get("transcript_path", "")
     cwd = hook_input.get("cwd", os.getcwd())
 
-    # 读取对话记录
+    # Read conversation transcript
     if not transcript_path:
         print("[myknowledge] No transcript_path in hook input, skipping.", file=sys.stderr)
         sys.exit(0)
@@ -161,18 +162,18 @@ def main():
         print("[myknowledge] No messages found in transcript, skipping.", file=sys.stderr)
         sys.exit(0)
 
-    # 过滤太短的对话（< 3 轮），通常没有有价值的知识
+    # Skip short conversations (< 3 messages), typically not valuable
     if len(messages) < 3:
         print(f"[myknowledge] Conversation too short ({len(messages)} messages), skipping.", file=sys.stderr)
         sys.exit(0)
 
-    # 推断项目名
+    # Detect project name
     project_name = detect_project_name(cwd)
 
-    # 发送到 API
+    # Send to API
     send_to_api(session_id, project_name, messages)
 
-    # 正常退出，不阻断 Claude Code 流程
+    # Exit cleanly without blocking Claude Code
     sys.exit(0)
 
 

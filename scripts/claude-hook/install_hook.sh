@@ -1,17 +1,17 @@
 #!/bin/bash
 #
-# 安装 myknowledge Claude Code hook
+# Install myknowledge Claude Code hook
 #
-# 使用方式:
+# Usage:
 #   ./scripts/install_hook.sh
 #
-# 做了什么:
-#   1. 将 Stop hook 配置写入 ~/.claude/settings.json
-#   2. 设置 claude_hook.py 的执行权限
+# What it does:
+#   1. Writes the Stop hook config into ~/.claude/settings.json
+#   2. Sets execute permission on claude_hook.py
 #
-# 环境变量 (可选):
-#   MYKNOWLEDGE_API_URL  — API 地址，默认 http://localhost:8000
-#   MYKNOWLEDGE_PROJECT  — 默认项目名（不设则自动从 git 推断）
+# Environment variables (optional):
+#   MYKNOWLEDGE_API_URL  — API address, default http://localhost:8000
+#   MYKNOWLEDGE_PROJECT  — Default project name (auto-detected from git if not set)
 #
 
 set -e
@@ -23,30 +23,52 @@ SETTINGS_FILE="$HOME/.claude/settings.json"
 echo "=== myknowledge Hook Installer ==="
 echo ""
 
-# 确保 hook 脚本可执行
+# Ensure hook script is executable
 chmod +x "$HOOK_SCRIPT"
 
-# 确保 ~/.claude 目录存在
+# Ensure ~/.claude directory exists
 mkdir -p "$HOME/.claude"
 
-# 读取或创建 settings.json
+# Read or create settings.json
 if [ -f "$SETTINGS_FILE" ]; then
     EXISTING=$(cat "$SETTINGS_FILE")
 else
     EXISTING="{}"
 fi
 
-# 检查是否已经安装过
+# Check if already installed
 if echo "$EXISTING" | grep -q "claude_hook.py"; then
     echo "Hook already installed in $SETTINGS_FILE"
     echo "To reinstall, remove the existing hook config first."
     exit 0
 fi
 
-# 构建 hook 命令
+# Build hook command
 HOOK_CMD="python3 $HOOK_SCRIPT"
 
-# 用 python 合并配置（避免 jq 依赖）
+# Update claude_hook_config.json with the actual path
+CONFIG_JSON="$SCRIPT_DIR/claude_hook_config.json"
+python3 -c "
+import json
+config = {
+    'hooks': {
+        'Stop': [{
+            'matcher': '',
+            'hooks': [{
+                'type': 'command',
+                'command': '$HOOK_CMD',
+                'async': True
+            }]
+        }]
+    }
+}
+with open('$CONFIG_JSON', 'w') as f:
+    json.dump(config, f, indent=2)
+    f.write('\n')
+print(f'Config updated: $CONFIG_JSON')
+"
+
+# Merge config into settings.json using Python (avoids jq dependency)
 python3 -c "
 import json, sys
 
@@ -59,11 +81,11 @@ try:
 except (FileNotFoundError, json.JSONDecodeError):
     settings = {}
 
-# 确保 hooks 结构存在
+# Ensure hooks structure exists
 if 'hooks' not in settings:
     settings['hooks'] = {}
 
-# 添加 Stop hook
+# Add Stop hook
 stop_hooks = settings['hooks'].get('Stop', [])
 
 new_hook_entry = {
