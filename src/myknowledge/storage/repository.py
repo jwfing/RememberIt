@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from myknowledge.storage.models import (
     Conversation,
@@ -100,7 +101,9 @@ class Repository:
         distance_expr = Memory.embedding.cosine_distance(query_embedding)
         similarity_expr = (1 - distance_expr).label("similarity")
 
-        stmt = select(Memory, similarity_expr).where(
+        stmt = select(Memory, similarity_expr).options(
+            selectinload(Memory.project)
+        ).where(
             (1 - distance_expr) >= similarity_threshold
         )
 
