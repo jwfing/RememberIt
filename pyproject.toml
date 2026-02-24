@@ -21,7 +21,7 @@ dependencies = [
     # LLM (OpenRouter)
     "httpx>=0.28.0",
     # MCP
-    "mcp>=1.0.0",
+    "mcp>=1.26.0",
     # Config
     "pydantic-settings>=2.0.0",
     # Utilities
