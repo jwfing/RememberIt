@@ -100,6 +100,8 @@ class IngestResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str = "ok"
+    version: str = "unknown"
+    uptime: str = "unknown"
     database: str = "unknown"
     embedding_model: str = "unknown"
 
