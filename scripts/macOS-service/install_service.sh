@@ -16,7 +16,7 @@ set -e
 
 # ── Locate project path ──
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 PYTHON_BIN="$(which python3)"
 
 PLIST_DIR="$HOME/Library/LaunchAgents"

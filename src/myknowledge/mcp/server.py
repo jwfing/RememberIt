@@ -24,6 +24,7 @@ mcp = FastMCP(
         "Use `remember_this` to save important knowledge for future reference. "
         "Use `list_projects` to see all projects and their knowledge overview."
     ),
+    stateless_http=True,
     streamable_http_path="/",
 )
 
