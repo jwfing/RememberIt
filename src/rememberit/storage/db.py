@@ -2,7 +2,7 @@
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from myknowledge.config import settings
+from rememberit.config import settings
 
 _connect_args = {"ssl": "require"} if settings.DATABASE_REQUIRE_SSL else {}
 

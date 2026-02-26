@@ -12,18 +12,18 @@ logging.basicConfig(
 def run_server():
     """Run the unified server with both REST API and MCP endpoints."""
     import uvicorn
-    from myknowledge.config import settings
+    from rememberit.config import settings
 
-    logger = logging.getLogger("myknowledge.startup")
+    logger = logging.getLogger("rememberit.startup")
     logger.info(
-        "Starting myknowledge on %s:%s (API: %s/*, MCP: /mcp)",
+        "Starting rememberit on %s:%s (API: %s/*, MCP: /mcp)",
         settings.API_HOST,
         settings.API_PORT,
         settings.API_PREFIX,
     )
 
     uvicorn.run(
-        "myknowledge.api.app:app",
+        "rememberit.api.app:app",
         host=settings.API_HOST,
         port=settings.API_PORT,
         reload=False,
@@ -31,7 +31,7 @@ def run_server():
 
 
 def main():
-    parser = argparse.ArgumentParser(description="myknowledge - Agent Memory")
+    parser = argparse.ArgumentParser(description="rememberit - Agent Memory")
     parser.add_argument(
         "command",
         nargs="?",

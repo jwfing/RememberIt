@@ -3,7 +3,7 @@
 Claude Code Hook Script — Background Path ingestion entry point
 
 Automatically triggered at the end of each Claude Code conversation (Stop event).
-Reads the full conversation transcript and sends it to the myknowledge API
+Reads the full conversation transcript and sends it to the rememberit API
 for knowledge extraction.
 
 Usage:
@@ -11,8 +11,8 @@ Usage:
   See claude_hook_config.json in the same directory.
 
 Environment variables:
-  MYKNOWLEDGE_API_URL   — API address, default http://localhost:6789
-  MYKNOWLEDGE_PROJECT   — Current project name, used to associate memories with a project
+  REMEMBERIT_API_URL   — API address, default http://localhost:6789
+  REMEMBERIT_PROJECT   — Current project name, used to associate memories with a project
 """
 
 import json
@@ -22,11 +22,11 @@ import urllib.request
 import urllib.error
 from pathlib import Path
 
-API_URL = os.environ.get("MYKNOWLEDGE_API_URL", "http://localhost:6789")
+API_URL = os.environ.get("REMEMBERIT_API_URL", "http://localhost:6789")
 INGEST_ENDPOINT = f"{API_URL}/api/v1/ingest"
 
 # Infer project name from environment variable or config
-PROJECT_NAME = os.environ.get("MYKNOWLEDGE_PROJECT", "")
+PROJECT_NAME = os.environ.get("REMEMBERIT_PROJECT", "")
 
 
 def read_hook_input() -> dict:
@@ -107,7 +107,7 @@ def detect_project_name(cwd: str) -> str:
 
 
 def send_to_api(session_id: str, project_name: str, messages: list[dict]) -> bool:
-    """Send the conversation to the myknowledge API ingest endpoint."""
+    """Send the conversation to the rememberit API ingest endpoint."""
     if not messages:
         return False
 
@@ -133,15 +133,15 @@ def send_to_api(session_id: str, project_name: str, messages: list[dict]) -> boo
             result = json.loads(resp.read().decode("utf-8"))
             # Output to stderr (visible in Claude Code verbose mode)
             print(
-                f"[myknowledge] Conversation ingested: {result.get('conversation_id', 'unknown')}",
+                f"[rememberit] Conversation ingested: {result.get('conversation_id', 'unknown')}",
                 file=sys.stderr,
             )
             return True
     except urllib.error.URLError as e:
-        print(f"[myknowledge] API unreachable: {e}", file=sys.stderr)
+        print(f"[rememberit] API unreachable: {e}", file=sys.stderr)
         return False
     except Exception as e:
-        print(f"[myknowledge] Ingest failed: {e}", file=sys.stderr)
+        print(f"[rememberit] Ingest failed: {e}", file=sys.stderr)
         return False
 
 
@@ -154,17 +154,17 @@ def main():
 
     # Read conversation transcript
     if not transcript_path:
-        print("[myknowledge] No transcript_path in hook input, skipping.", file=sys.stderr)
+        print("[rememberit] No transcript_path in hook input, skipping.", file=sys.stderr)
         sys.exit(0)
 
     messages = read_transcript(transcript_path)
     if not messages:
-        print("[myknowledge] No messages found in transcript, skipping.", file=sys.stderr)
+        print("[rememberit] No messages found in transcript, skipping.", file=sys.stderr)
         sys.exit(0)
 
     # Skip short conversations (< 3 messages), typically not valuable
     if len(messages) < 3:
-        print(f"[myknowledge] Conversation too short ({len(messages)} messages), skipping.", file=sys.stderr)
+        print(f"[rememberit] Conversation too short ({len(messages)} messages), skipping.", file=sys.stderr)
         sys.exit(0)
 
     # Detect project name

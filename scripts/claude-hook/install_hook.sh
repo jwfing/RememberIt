@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Install myknowledge Claude Code hook
+# Install rememberit Claude Code hook
 #
 # Usage:
 #   ./scripts/install_hook.sh
@@ -10,8 +10,8 @@
 #   2. Sets execute permission on claude_hook.py
 #
 # Environment variables (optional):
-#   MYKNOWLEDGE_API_URL  — API address, default http://localhost:8000
-#   MYKNOWLEDGE_PROJECT  — Default project name (auto-detected from git if not set)
+#   REMEMBERIT_API_URL  — API address, default http://localhost:6789
+#   REMEMBERIT_PROJECT  — Default project name (auto-detected from git if not set)
 #
 
 set -e
@@ -20,7 +20,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 HOOK_SCRIPT="$SCRIPT_DIR/claude_hook.py"
 SETTINGS_FILE="$HOME/.claude/settings.json"
 
-echo "=== myknowledge Hook Installer ==="
+echo "=== rememberit Hook Installer ==="
 echo ""
 
 # Ensure hook script is executable
@@ -114,8 +114,8 @@ echo "Hook script: $HOOK_SCRIPT"
 echo "Config file: $SETTINGS_FILE"
 echo ""
 echo "Optional environment variables (add to your shell profile):"
-echo "  export MYKNOWLEDGE_API_URL=http://localhost:6789"
-echo "  export MYKNOWLEDGE_PROJECT=your-project-name"
+echo "  export REMEMBERIT_API_URL=http://localhost:6789"
+echo "  export REMEMBERIT_PROJECT=your-project-name"
 echo ""
 echo "To verify, run: claude /hooks"
 echo "You should see the Stop hook listed under [User]."

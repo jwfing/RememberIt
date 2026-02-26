@@ -7,8 +7,8 @@ from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from myknowledge.config import settings
-from myknowledge.storage.models import Base
+from rememberit.config import settings
+from rememberit.storage.models import Base
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)

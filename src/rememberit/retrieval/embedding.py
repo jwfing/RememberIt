@@ -5,7 +5,7 @@ from functools import lru_cache
 
 from sentence_transformers import SentenceTransformer
 
-from myknowledge.config import settings
+from rememberit.config import settings
 
 logger = logging.getLogger(__name__)
 

@@ -5,10 +5,10 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from myknowledge.api.routes.health import router as health_router
-from myknowledge.api.routes.ingest import router as ingest_router
-from myknowledge.config import settings
-from myknowledge.mcp.server import create_mcp_app
+from rememberit.api.routes.health import router as health_router
+from rememberit.api.routes.ingest import router as ingest_router
+from rememberit.config import settings
+from rememberit.mcp.server import create_mcp_app
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ def create_app() -> FastAPI:
         """Startup and shutdown events."""
         # Startup: pre-load the embedding model
         logger.info("Loading embedding model...")
-        from myknowledge.retrieval.embedding import get_model
+        from rememberit.retrieval.embedding import get_model
 
         get_model()
         logger.info("Embedding model ready.")
@@ -34,7 +34,7 @@ def create_app() -> FastAPI:
         logger.info("Shutting down.")
 
     app = FastAPI(
-        title="myknowledge",
+        title="rememberit",
         description="Agent Memory - Cross-project knowledge sharing",
         version="0.1.0",
         lifespan=lifespan,

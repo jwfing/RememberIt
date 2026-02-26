@@ -1,15 +1,15 @@
 #!/bin/bash
 #
-# Install myknowledge as a macOS launchd service
+# Install rememberit as a macOS launchd service
 #
 # Usage:
 #   ./scripts/install_service.sh
 #
 # After installation:
-#   Start:  launchctl load ~/Library/LaunchAgents/dev.jwfing.myknowledge.plist
-#   Stop:   launchctl unload ~/Library/LaunchAgents/dev.jwfing.myknowledge.plist
-#   Logs:   tail -f ~/Library/Logs/myknowledge/server.log
-#   Status: launchctl list | grep myknowledge
+#   Start:  launchctl load ~/Library/LaunchAgents/dev.jwfing.rememberit.plist
+#   Stop:   launchctl unload ~/Library/LaunchAgents/dev.jwfing.rememberit.plist
+#   Logs:   tail -f ~/Library/Logs/rememberit/server.log
+#   Status: launchctl list | grep rememberit
 #
 
 set -e
@@ -20,10 +20,10 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 PYTHON_BIN="$(which python3)"
 
 PLIST_DIR="$HOME/Library/LaunchAgents"
-LOG_DIR="$HOME/Library/Logs/myknowledge"
+LOG_DIR="$HOME/Library/Logs/rememberit"
 ENV_FILE="$PROJECT_DIR/.env"
 
-echo "=== myknowledge Service Installer ==="
+echo "=== rememberit Service Installer ==="
 echo ""
 echo "Project:  $PROJECT_DIR"
 echo "Python:   $PYTHON_BIN"
@@ -44,20 +44,20 @@ API_PORT=$(grep -E '^API_PORT=' "$ENV_FILE" 2>/dev/null | cut -d= -f2 || echo "6
 API_PORT="${API_PORT:-6789}"
 
 # ── Generate plist ──
-PLIST="$PLIST_DIR/dev.jwfing.myknowledge.plist"
+PLIST="$PLIST_DIR/dev.jwfing.rememberit.plist"
 cat > "$PLIST" << PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>dev.jwfing.myknowledge</string>
+    <string>dev.jwfing.rememberit</string>
 
     <key>ProgramArguments</key>
     <array>
         <string>$PYTHON_BIN</string>
         <string>-m</string>
-        <string>myknowledge</string>
+        <string>rememberit</string>
         <string>serve</string>
     </array>
 
@@ -97,26 +97,26 @@ echo ""
 echo "Loading service..."
 
 # Unload old services if they exist
-launchctl unload "$PLIST_DIR/dev.jwfing.myknowledge.api.plist" 2>/dev/null || true
-launchctl unload "$PLIST_DIR/dev.jwfing.myknowledge.mcp.plist" 2>/dev/null || true
+launchctl unload "$PLIST_DIR/dev.jwfing.rememberit.api.plist" 2>/dev/null || true
+launchctl unload "$PLIST_DIR/dev.jwfing.rememberit.mcp.plist" 2>/dev/null || true
 launchctl unload "$PLIST" 2>/dev/null || true
 
 # Clean up old plist files
-rm -f "$PLIST_DIR/dev.jwfing.myknowledge.api.plist"
-rm -f "$PLIST_DIR/dev.jwfing.myknowledge.mcp.plist"
+rm -f "$PLIST_DIR/dev.jwfing.rememberit.api.plist"
+rm -f "$PLIST_DIR/dev.jwfing.rememberit.mcp.plist"
 
 launchctl load "$PLIST"
 
 echo ""
 echo "=== Installation complete ==="
 echo ""
-echo "Server: http://localhost:$API_PORT  (dev.jwfing.myknowledge)"
+echo "Server: http://localhost:$API_PORT  (dev.jwfing.rememberit)"
 echo "  API: http://localhost:$API_PORT/api/v1/*"
 echo "  MCP: http://localhost:$API_PORT/mcp"
 echo ""
 echo "Commands:"
-echo "  Status    launchctl list | grep myknowledge"
-echo "  Stop      launchctl unload ~/Library/LaunchAgents/dev.jwfing.myknowledge.plist"
-echo "  Restart   launchctl kickstart -k gui/\$(id -u)/dev.jwfing.myknowledge"
-echo "  Logs      tail -f ~/Library/Logs/myknowledge/server.log"
+echo "  Status    launchctl list | grep rememberit"
+echo "  Stop      launchctl unload ~/Library/LaunchAgents/dev.jwfing.rememberit.plist"
+echo "  Restart   launchctl kickstart -k gui/\$(id -u)/dev.jwfing.rememberit"
+echo "  Logs      tail -f ~/Library/Logs/rememberit/server.log"
 echo "  Uninstall ./scripts/uninstall_service.sh"

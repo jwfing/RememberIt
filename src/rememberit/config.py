@@ -8,7 +8,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # Database
-    DATABASE_URL: str = "postgresql+asyncpg://localhost:5432/myknowledge"
+    DATABASE_URL: str = "postgresql+asyncpg://localhost:5432/rememberit"
     DATABASE_REQUIRE_SSL: bool = False
 
     # LLM (OpenRouter)

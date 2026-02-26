@@ -1,8 +1,8 @@
-# MyKnowledge
+# RememberIt
 
 **Agent Memory Service for Cross-Project Knowledge Sharing**
 
-When developing with AI coding agents like Claude Code or Codex, each project and each conversation becomes an isolated information silo. myknowledge automatically distills valuable knowledge from development conversations (technical decisions, API designs, debugging experiences), stores them in a unified memory bank, and lets you query historical knowledge from any project via MCP.
+When developing with AI coding agents like Claude Code or Codex, each project and each conversation becomes an isolated information silo. rememberit automatically distills valuable knowledge from development conversations (technical decisions, API designs, debugging experiences), stores them in a unified memory bank, and lets you query historical knowledge from any project via MCP.
 
 ## How It Works
 
@@ -11,7 +11,7 @@ Claude Code Conversation
        │
        ├─── Stop Hook (auto) ──→ POST /api/v1/ingest ──→ LLM Distillation ──→ Store in DB
        │                           (Background Path)
-       └─── remember_this (manual) ──→ Store directly in DB
+       └─── remember_it (manual) ──→ Store directly in DB
               recall_memory ←────── Vector Search + Entity Matching + 3-Dimensional Scoring
               (Hot Path via MCP)
 ```
@@ -33,7 +33,7 @@ Claude Code Conversation
 ### 1. Install Dependencies
 
 ```bash
-cd myknowledge
+cd rememberit
 pip install -e .
 ```
 
@@ -49,7 +49,7 @@ Edit `.env` and fill in the required configuration:
 
 ```bash
 # Required: PostgreSQL connection string (pgvector extension must be installed)
-DATABASE_URL=postgresql+asyncpg://user:password@host:5432/myknowledge
+DATABASE_URL=postgresql+asyncpg://user:password@host:5432/rememberit
 
 # Required: OpenRouter API Key (used for knowledge distillation)
 OPENROUTER_API_KEY=sk-or-v1-xxx
@@ -66,7 +66,7 @@ alembic upgrade head
 ### 4. Start Server
 
 ```bash
-python -m myknowledge
+python -m rememberit
 ```
 
 This starts a single server on port 6789 with both the REST API (`/api/v1/*`) and MCP endpoint (`/mcp`).
@@ -78,7 +78,7 @@ This starts a single server on port 6789 with both the REST API (`/api/v1/*`) an
 Add MCP Server configuration in Claude Code:
 
 ```bash
-claude mcp add --transport http --scope user myknowledge http://127.0.0.1:6789/mcp
+claude mcp add --transport http --scope user rememberit http://127.0.0.1:6789/mcp
 ```
 
 Or manually edit `~/.claude.json`:
@@ -86,7 +86,7 @@ Or manually edit `~/.claude.json`:
 ```json
 {
   "mcpServers": {
-    "myknowledge": {
+    "rememberit": {
       "type": "http",
       "url": "http://localhost:6789/mcp"
     }
@@ -99,7 +99,7 @@ Once configured, agents in Claude Code can use these three tools:
 | Tool | Purpose | Example |
 |------|---------|---------|
 | `recall_memory` | Semantic search across cross-project knowledge | "How do I call the OAuth API in the platform project?" |
-| `remember_this` | Proactively save important knowledge | Save key decisions, API designs, etc. |
+| `remember_it` | Proactively save important knowledge | Save key decisions, API designs, etc. |
 | `list_projects` | View all projects and their knowledge summary | Get an overview of all projects |
 
 ### Install Claude Code Hook (Auto-Collection)
@@ -125,7 +125,7 @@ Edit `~/.claude/settings.json` and add the following to the `hooks` field:
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /absolute/path/to/myknowledge/scripts/claude_hook.py",
+            "command": "python3 /absolute/path/to/rememberit/scripts/claude_hook.py",
             "async": true
           }
         ]
@@ -139,10 +139,10 @@ Edit `~/.claude/settings.json` and add the following to the `hooks` field:
 
 ```bash
 # API address (default: http://localhost:6789)
-export MYKNOWLEDGE_API_URL=http://localhost:6789
+export REMEMBERIT_API_URL=http://localhost:6789
 
 # Manually specify project name (auto-inferred from git remote or directory name if not set)
-export MYKNOWLEDGE_PROJECT=my-project
+export REMEMBERIT_PROJECT=my-project
 ```
 
 After installation, run `claude /hooks` to verify — you should see the Stop hook listed under `[User]`.
@@ -150,10 +150,10 @@ After installation, run `claude /hooks` to verify — you should see the Stop ho
 ## Project Structure
 
 ```
-src/myknowledge/
+src/rememberit/
 ├── config.py                 # Environment variable configuration
 ├── types.py                  # Pydantic models, enums
-├── __main__.py               # Entry point: python -m myknowledge
+├── __main__.py               # Entry point: python -m rememberit
 │
 ├── api/                      # FastAPI REST API (also mounts MCP)
 │   ├── app.py                #   Application factory, mounts MCP at /mcp
@@ -162,7 +162,7 @@ src/myknowledge/
 │       └── health.py         #   GET /api/v1/health
 │
 ├── mcp/                      # MCP Server (Hot Path, mounted at /mcp)
-│   └── server.py             #   3 tools: remember_this, recall_memory, list_projects
+│   └── server.py             #   3 tools: remember_it, recall_memory, list_projects
 │
 ├── extraction/               # Distillation layer
 │   ├── pipeline.py           #   Async distillation pipeline: segmentation → LLM extraction → dedup → storage

@@ -8,20 +8,20 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
-from myknowledge.config import settings
-from myknowledge.retrieval.embedding import embed_text
-from myknowledge.retrieval.search import search_memories
-from myknowledge.storage.db import async_session_factory
-from myknowledge.storage.repository import Repository
+from rememberit.config import settings
+from rememberit.retrieval.embedding import embed_text
+from rememberit.retrieval.search import search_memories
+from rememberit.storage.db import async_session_factory
+from rememberit.storage.repository import Repository
 
 logger = logging.getLogger(__name__)
 
 mcp = FastMCP(
-    "myknowledge",
+    "rememberit",
     instructions=(
         "Agent Memory service for cross-project knowledge sharing. "
         "Use `recall_memory` to search for relevant knowledge across all projects. "
-        "Use `remember_this` to save important knowledge for future reference. "
+        "Use `remember_it` to save important knowledge for future reference. "
         "Use `list_projects` to see all projects and their knowledge overview."
     ),
     stateless_http=True,
@@ -33,7 +33,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """Log every incoming HTTP request with headers and response status."""
 
     async def dispatch(self, request: Request, call_next):
-        req_logger = logging.getLogger("myknowledge.mcp.http")
+        req_logger = logging.getLogger("rememberit.mcp.http")
         start = time.monotonic()
 
         # Log request details
@@ -81,11 +81,11 @@ def create_mcp_app():
     return app
 
 
-# ── Tool 1: remember_this ──
+# ── Tool 1: remember_it ──
 
 
 @mcp.tool()
-async def remember_this(
+async def remember_it(
     content: str,
     memory_type: str,
     project_name: str | None = None,
@@ -102,7 +102,7 @@ async def remember_this(
         importance: Importance score 0-1, default 0.8 for actively saved memories
     """
     logger.info(
-        "remember_this called: memory_type=%s, project=%s, tags=%s, importance=%s, content_len=%d",
+        "remember_it called: memory_type=%s, project=%s, tags=%s, importance=%s, content_len=%d",
         memory_type, project_name, tags, importance, len(content),
     )
 
@@ -250,7 +250,7 @@ async def list_projects() -> str:
 
         if not projects:
             logger.info("list_projects: no projects found")
-            return "No projects found. Start by saving memories with remember_this or ingesting conversations."
+            return "No projects found. Start by saving memories with remember_it or ingesting conversations."
 
         logger.info("list_projects: returning %d projects", len(projects))
 

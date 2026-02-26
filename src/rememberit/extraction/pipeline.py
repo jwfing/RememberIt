@@ -5,12 +5,12 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from myknowledge.config import settings
-from myknowledge.extraction.llm_client import extract_knowledge
-from myknowledge.retrieval.embedding import embed_text
-from myknowledge.storage.db import async_session_factory
-from myknowledge.storage.repository import Repository
-from myknowledge.types import ExtractedKnowledge
+from rememberit.config import settings
+from rememberit.extraction.llm_client import extract_knowledge
+from rememberit.retrieval.embedding import embed_text
+from rememberit.storage.db import async_session_factory
+from rememberit.storage.repository import Repository
+from rememberit.types import ExtractedKnowledge
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +73,7 @@ async def process_conversation(conversation_id: uuid.UUID) -> None:
         try:
             # Step 1: Fetch conversation
             from sqlalchemy import select
-            from myknowledge.storage.models import Conversation
+            from rememberit.storage.models import Conversation
 
             stmt = select(Conversation).where(Conversation.id == conversation_id)
             result = await session.execute(stmt)

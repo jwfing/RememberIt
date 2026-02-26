@@ -4,9 +4,9 @@ import time
 
 from fastapi import APIRouter
 
-from myknowledge.retrieval.embedding import is_model_loaded
-from myknowledge.storage.db import check_connection
-from myknowledge.types import HealthResponse
+from rememberit.retrieval.embedding import is_model_loaded
+from rememberit.storage.db import check_connection
+from rememberit.types import HealthResponse
 
 router = APIRouter(tags=["health"])
 

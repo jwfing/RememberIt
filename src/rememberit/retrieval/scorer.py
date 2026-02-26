@@ -3,7 +3,7 @@
 import math
 from datetime import datetime, timezone
 
-from myknowledge.config import settings
+from rememberit.config import settings
 
 
 def calculate_score(

@@ -5,8 +5,8 @@ import logging
 
 import httpx
 
-from myknowledge.config import settings
-from myknowledge.types import ExtractedKnowledge
+from rememberit.config import settings
+from rememberit.types import ExtractedKnowledge
 
 logger = logging.getLogger(__name__)
 

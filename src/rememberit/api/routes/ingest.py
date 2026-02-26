@@ -5,10 +5,10 @@ import logging
 from fastapi import APIRouter, BackgroundTasks, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from myknowledge.extraction.pipeline import process_conversation
-from myknowledge.storage.db import get_session
-from myknowledge.storage.repository import Repository
-from myknowledge.types import ConversationIngestRequest, IngestResponse
+from rememberit.extraction.pipeline import process_conversation
+from rememberit.storage.db import get_session
+from rememberit.storage.repository import Repository
+from rememberit.types import ConversationIngestRequest, IngestResponse
 
 logger = logging.getLogger(__name__)
 

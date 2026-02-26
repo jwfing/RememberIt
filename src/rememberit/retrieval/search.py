@@ -6,11 +6,11 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from myknowledge.config import settings
-from myknowledge.retrieval.embedding import embed_text
-from myknowledge.retrieval.scorer import calculate_score
-from myknowledge.storage.repository import Repository
-from myknowledge.types import MemoryResponse, QueryResponse
+from rememberit.config import settings
+from rememberit.retrieval.embedding import embed_text
+from rememberit.retrieval.scorer import calculate_score
+from rememberit.storage.repository import Repository
+from rememberit.types import MemoryResponse, QueryResponse
 
 logger = logging.getLogger(__name__)
 

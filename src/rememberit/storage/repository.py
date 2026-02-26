@@ -8,7 +8,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from myknowledge.storage.models import (
+from rememberit.storage.models import (
     Conversation,
     Entity,
     Memory,
