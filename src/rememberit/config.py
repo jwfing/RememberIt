@@ -36,6 +36,7 @@ class Settings(BaseSettings):
 
     # Extraction
     DEDUP_SIMILARITY_THRESHOLD: float = 0.9
+    MAX_SEGMENTS_PER_CONVERSATION: int = 3  # Cap LLM calls per conversation for cost control
 
     model_config = {"env_file": ".env", "case_sensitive": True}
 

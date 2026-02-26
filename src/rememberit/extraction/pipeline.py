@@ -1,6 +1,7 @@
 """Async extraction pipeline: conversation → structured knowledge."""
 
 import logging
+import re
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,20 +15,126 @@ from rememberit.types import ExtractedKnowledge
 
 logger = logging.getLogger(__name__)
 
+# ── Entity noise filter ──
+
+# Patterns that indicate a noisy entity (filenames, generic code artifacts)
+_NOISY_ENTITY_PATTERNS = [
+    re.compile(r"^.+\.\w{1,5}$"),     # filenames: model.py, config.json, utils.ts
+    re.compile(r"^__\w+__$"),          # dunder names: __init__, __main__
+    re.compile(r"^[a-z_]{1,15}$"),     # short lowercase identifiers: func, var, cls
+    re.compile(r"^\.\w+$"),            # dotfiles: .env, .gitignore
+]
+
+# Explicit blocklist of common noisy entity names
+_NOISY_ENTITY_NAMES = {
+    "function", "variable", "file", "class", "module", "package", "folder",
+    "directory", "import", "export", "print", "logging", "error", "exception",
+    "os", "sys", "json", "pathlib", "subprocess", "typing", "datetime",
+    "main", "index", "app", "test", "utils", "helpers", "config", "settings",
+    "readme", "changelog", "license", "makefile", "dockerfile",
+    "node_modules", "venv", ".git", "__pycache__",
+}
+
+
+def _is_noisy_entity(name: str) -> bool:
+    """Check if an entity name is likely noise rather than a meaningful concept."""
+    lower = name.lower().strip()
+    if lower in _NOISY_ENTITY_NAMES:
+        return True
+    for pattern in _NOISY_ENTITY_PATTERNS:
+        if pattern.match(lower):
+            return True
+    return False
+
+
+def _filter_entities(fragment: ExtractedKnowledge) -> ExtractedKnowledge:
+    """Remove noisy entities from a knowledge fragment and clean up orphaned relations."""
+    clean_entities = [e for e in fragment.entities if not _is_noisy_entity(e.get("name", ""))]
+    valid_names = {e["name"] for e in clean_entities}
+    clean_relations = [
+        r for r in fragment.relations
+        if r.get("source") in valid_names and r.get("target") in valid_names
+    ]
+    fragment.entities = clean_entities
+    fragment.relations = clean_relations
+    return fragment
+
+
+def _trim_code_blocks(text: str, max_lines: int = 20) -> str:
+    """Truncate long code blocks to reduce token usage while keeping context."""
+    result = []
+    in_code = False
+    code_lines = []
+    for line in text.split("\n"):
+        if line.strip().startswith("```") and not in_code:
+            in_code = True
+            code_lines = [line]
+        elif line.strip().startswith("```") and in_code:
+            code_lines.append(line)
+            if len(code_lines) > max_lines + 2:
+                # Keep first and last lines of the code block
+                trimmed = code_lines[:max_lines // 2 + 1]
+                trimmed.append(f"    ... ({len(code_lines) - max_lines} lines omitted) ...")
+                trimmed.extend(code_lines[-(max_lines // 2):])
+                result.extend(trimmed)
+            else:
+                result.extend(code_lines)
+            in_code = False
+            code_lines = []
+        elif in_code:
+            code_lines.append(line)
+        else:
+            result.append(line)
+    # Handle unclosed code blocks
+    if code_lines:
+        result.extend(code_lines[:max_lines])
+    return "\n".join(result)
+
 
 def _conversation_to_text(messages: list[dict]) -> str:
-    """Convert raw message list to readable text for the LLM."""
+    """Convert raw message list to readable text for the LLM.
+
+    Applies token-reduction optimizations:
+    - Strips tool call results (verbose, not useful for knowledge extraction)
+    - Truncates long code blocks
+    """
     lines = []
     for msg in messages:
         role = msg.get("role", "unknown")
         content = msg.get("content", "")
         if isinstance(content, list):
-            # Handle structured content (e.g., tool calls)
-            content = " ".join(
-                part.get("text", str(part)) for part in content if isinstance(part, dict)
-            )
-        lines.append(f"[{role}]: {content}")
+            # Handle structured content — skip tool_use and tool_result blocks
+            text_parts = []
+            for part in content:
+                if isinstance(part, dict):
+                    if part.get("type") == "text":
+                        text_parts.append(part.get("text", ""))
+                    elif part.get("type") == "tool_result":
+                        # Include a brief marker instead of full tool output
+                        tool_name = part.get("tool_use_id", "tool")
+                        text_parts.append(f"[tool result from {tool_name}: omitted for brevity]")
+                    # Skip tool_use blocks entirely — the text summary is enough
+            content = "\n".join(text_parts)
+        if content and content.strip():
+            lines.append(f"[{role}]: {_trim_code_blocks(content)}")
     return "\n\n".join(lines)
+
+
+def _is_trivial_conversation(text: str, message_count: int) -> bool:
+    """Pre-filter conversations that are unlikely to contain reusable knowledge.
+
+    Heuristics:
+    - Very short conversations (< 500 chars useful text)
+    - Too few meaningful exchanges (< 3 assistant messages)
+    - Purely routine tasks (simple file edits, one-liner questions)
+    """
+    # Too short to contain architectural knowledge
+    if len(text) < 500:
+        return True
+    # Very few exchanges
+    if message_count < 4:
+        return True
+    return False
 
 
 def _segment_conversation(text: str, max_chars: int = 8000) -> list[str]:
@@ -91,7 +198,27 @@ async def process_conversation(conversation_id: uuid.UUID) -> None:
             if isinstance(messages, dict):
                 messages = [messages]
             text = _conversation_to_text(messages)
+
+            # Step 2.5: Pre-filter trivial conversations (saves LLM cost)
+            if _is_trivial_conversation(text, len(messages)):
+                logger.info(
+                    "Conversation %s is trivial (%d chars, %d msgs), skipping extraction",
+                    conversation_id, len(text), len(messages),
+                )
+                await repo.mark_conversation_processed(conversation_id)
+                await session.commit()
+                return
+
             segments = _segment_conversation(text)
+
+            # Cost control: limit segments to avoid excessive LLM calls
+            max_segments = settings.MAX_SEGMENTS_PER_CONVERSATION
+            if len(segments) > max_segments:
+                logger.info(
+                    "Conversation %s has %d segments, capping at %d",
+                    conversation_id, len(segments), max_segments,
+                )
+                segments = segments[:max_segments]
 
             logger.info(
                 "Processing conversation %s: %d segments",
@@ -106,6 +233,8 @@ async def process_conversation(conversation_id: uuid.UUID) -> None:
                 fragments = await extract_knowledge(segment)
 
                 for fragment in fragments:
+                    # Post-process: filter noisy entities
+                    fragment = _filter_entities(fragment)
                     memory = await _store_fragment(
                         repo=repo,
                         fragment=fragment,

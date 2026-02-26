@@ -12,24 +12,40 @@ logger = logging.getLogger(__name__)
 
 EXTRACTION_PROMPT = """\
 You are a knowledge extraction assistant. Given a segment of a developer conversation \
-with an AI coding agent, extract structured knowledge fragments.
+with an AI coding agent, extract ONLY high-value, reusable knowledge fragments.
 
 For each distinct piece of knowledge, output a JSON object with:
-- "content": A clear, self-contained summary of the knowledge (1-3 sentences)
+- "content": A clear, self-contained summary of the knowledge (1-3 sentences). \
+Must be understandable without reading the original conversation.
 - "memory_type": One of "semantic" (facts, definitions, API specs), "episodic" (experiences, \
 bugs encountered, solutions found), or "procedural" (workflows, best practices, team conventions)
-- "importance": Float 0-1 (0.8+ for key architectural decisions, API contracts; 0.5 for \
-general context; 0.3 for minor details)
-- "tags": List of relevant technology/domain tags (e.g., ["OAuth", "PKCE", "FastAPI"])
-- "entities": List of entities mentioned, each as {"name": "...", "type": "Project|API|Component|TechStack|Config"}
+- "importance": Float 0-1 (0.9 for key architectural decisions/API contracts that affect \
+multiple components; 0.7 for useful patterns/solutions; 0.5 for general context; \
+0.3 for minor details). Be strict — most fragments should be 0.5-0.7.
+- "tags": List of relevant technology/domain tags (e.g., ["OAuth", "PKCE", "FastAPI"]). \
+Max 5 tags. Use well-known technology names, not filenames.
+- "entities": List of SIGNIFICANT entities, each as {"name": "...", "type": "Project|API|Component|TechStack|Config"}
 - "relations": List of relations between entities, each as {"source": "...", "target": "...", \
 "type": "exposes|depends_on|uses|configured_with"}
 
-Rules:
-- Skip debugging noise, error traces, and routine code generation
-- Focus on decisions, architecture, API contracts, lessons learned, and configurations
-- Each knowledge fragment should be self-contained and useful out of context
-- If there is no extractable knowledge, return an empty list
+Entity extraction rules (IMPORTANT):
+- Entities should be meaningful architectural concepts, NOT code artifacts
+- GOOD entities: "OAuth Service", "Payment API", "Redis Cache", "PostgreSQL", "User Authentication Module"
+- BAD entities (DO NOT extract): filenames (model.py, config.json, utils.ts), \
+generic terms (function, variable, file, class, module), \
+standard library items (os, sys, json, pathlib), \
+routine operations (import, print, logging)
+- Entity names should be human-readable descriptive names, not code identifiers
+- Max 3 entities per fragment. Only extract entities that are architecturally significant.
+
+Knowledge extraction rules:
+- Skip debugging noise, error traces, routine code generation, and simple Q&A
+- Skip trivial changes (typo fixes, formatting, import reordering)
+- Focus on: WHY decisions were made, architecture patterns, non-obvious solutions, API contracts, \
+team conventions, and hard-won debugging insights
+- Each fragment must be useful to a developer working on a DIFFERENT project
+- If the conversation is mostly routine coding with no reusable knowledge, return an empty list []
+- Aim for quality over quantity: 1-3 high-quality fragments is better than 10 low-quality ones
 
 Return ONLY a JSON array of knowledge objects. No explanation or markdown.\
 """

@@ -162,10 +162,24 @@ def main():
         print("[rememberit] No messages found in transcript, skipping.", file=sys.stderr)
         sys.exit(0)
 
-    # Skip short conversations (< 3 messages), typically not valuable
-    if len(messages) < 3:
+    # Skip short conversations (< 4 exchanges), typically not valuable
+    if len(messages) < 4:
         print(f"[rememberit] Conversation too short ({len(messages)} messages), skipping.", file=sys.stderr)
         sys.exit(0)
+
+    # Skip conversations with very little content (< 500 chars total)
+    total_chars = sum(len(m.get("content", "")) for m in messages)
+    if total_chars < 500:
+        print(f"[rememberit] Conversation content too short ({total_chars} chars), skipping.", file=sys.stderr)
+        sys.exit(0)
+
+    # Truncate very long conversations to reduce token usage
+    # Keep first 2 messages (context) + last 30 messages (most relevant work)
+    MAX_MESSAGES = 32
+    if len(messages) > MAX_MESSAGES:
+        original_count = len(messages)
+        messages = messages[:2] + messages[-(MAX_MESSAGES - 2):]
+        print(f"[rememberit] Truncated {original_count} messages to {len(messages)} for cost control.", file=sys.stderr)
 
     # Detect project name
     project_name = detect_project_name(cwd)
