@@ -4,6 +4,14 @@
 
 When developing with AI coding agents like Claude Code or Codex, each project and each conversation becomes an isolated information silo. rememberit automatically distills valuable knowledge from development conversations (technical decisions, API designs, debugging experiences), stores them in a unified memory bank, and lets you query historical knowledge from any project via MCP.
 
+## Screenshots
+- homepage
+![homepage](./images/homepage.webp)
+- memory data
+![dashboard1](./images/dashboard1.webp)
+- knowledge graph
+![dashboard2](./images/dashboard2.webp)
+
 ## How It Works
 
 ```
