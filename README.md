@@ -185,28 +185,7 @@ memor.ai/
 │   ├── pyproject.toml                #   项目配置 & 依赖
 │   ├── alembic.ini                   #   数据库迁移配置
 │   ├── src/rememberit/
-│   │   ├── config.py                 #   Environment variable configuration
-│   │   ├── types.py                  #   Pydantic models, enums
-│   │   ├── __main__.py               #   Entry point: python -m rememberit
-│   │   ├── api/                      #   FastAPI REST API (also mounts MCP)
-│   │   │   ├── app.py                #     Application factory, mounts MCP at /mcp
-│   │   │   └── routes/
-│   │   │       ├── ingest.py         #     POST /api/v1/ingest (Background Path)
-│   │   │       └── health.py         #     GET /api/v1/health
-│   │   ├── mcp/                      #   MCP Server (Hot Path, mounted at /mcp)
-│   │   │   └── server.py             #     3 tools: remember_it, recall_memory, list_projects
-│   │   ├── extraction/               #   Distillation layer
-│   │   │   ├── pipeline.py           #     Async pipeline: segmentation → LLM → dedup → store
-│   │   │   └── llm_client.py         #     OpenRouter Claude Haiku client
-│   │   ├── storage/                  #   Storage layer
-│   │   │   ├── db.py                 #     AsyncPG connection pool
-│   │   │   ├── models.py             #     SQLAlchemy ORM for 6 tables
-│   │   │   ├── repository.py         #     Data access layer
-│   │   │   └── migrations/           #     Alembic migrations
-│   │   └── retrieval/                #   Retrieval layer
-│   │       ├── embedding.py          #     Local embedding model (singleton cache)
-│   │       ├── search.py             #     Hybrid retrieval: vector + entity + scoring
-│   │       └── scorer.py             #     score = α×similarity + β×importance + γ×recency
+│   │
 │   ├── tests/                        #   Python tests
 │   └── scripts/
 │       ├── claude-hook/              #   Claude Code Stop hook
@@ -215,6 +194,10 @@ memor.ai/
 │       └── macOS-service/            #   macOS launchd service
 │           ├── install_service.sh
 │           └── uninstall_service.sh
+├── frontend
+│   ├── package.json
+│   ├── public/
+│   ├── src/
 ├── .env                              # 环境变量（前后端共享）
 ├── .env.example
 └── README.md
@@ -251,4 +234,4 @@ Each query returns at most 3-5 results, with total tokens kept under 2000 to avo
 
 ## License
 
-MIT
+Apache-2.0
